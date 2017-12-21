@@ -1,6 +1,6 @@
 --- 
-title: "A Minimal Book Example"
-author: "Yihui Xie"
+title: "A Minimal Syllabus Example"
+author: "James Suleiman"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
@@ -12,19 +12,7 @@ github-repo: rstudio/bookdown-demo
 description: "This is a minimal example of using the bookdown package to write a book. The output format for this example is bookdown::gitbook."
 ---
 
-# Prerequisites
-
-This is a _sample_ book written in **Markdown**. You can use anything that Pandoc's Markdown supports, e.g., a math equation $a^2 + b^2 = c^2$.
-
-For now, you have to install the development versions of **bookdown** from Github:
-
-```{r eval=FALSE}
-devtools::install_github("rstudio/bookdown")
-```
-
-Remember each Rmd file contains one and only one chapter, and a chapter is defined by the first-level heading `#`.
-
-To compile this example to PDF, you need to install XeLaTeX.
+# Introduction {-}
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages
@@ -32,3 +20,46 @@ knitr::write_bib(c(
   .packages(), 'bookdown', 'knitr', 'rmarkdown'
 ), 'packages.bib')
 ```
+
+Welcome to the class. Here is a description.
+
+## Pre-class checklist {-}
+
+Before the class starts, you are expected to:
+
+* do this
+* then this
+* and even this
+
+## Schedule {-}
+
+This is the only place you'll find due dates.
+
+_last updated: `r Sys.Date()`_
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+# first unit end date is the second Friday of the semester
+# every other unit ends Friday
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+output_schedule <- schedule %>%
+  mutate(Date = substr(Start,6,10), Due = substr(End, 6, 10)) %>%
+  select(Date, Unit, Topic, Items_due = Due.Short, Due)
+kable(output_schedule, keep.line.breaks=TRUE)
+```
+
+## Syllabus {-}
+
+All your syllabus junk goes here.
+
+## Contact {-}
+
+There are a variety of ways to contact me. My office is in 322 Luther Bonney. I am good about responding to emails (suleiman@maine.edu) within 24 hours (48 on weekends). I typically check my emails twice per day (late morning and late afternoon). If you find this rigid email schedule somewhat odd, [this link pretty much describes the email system I have in place](http://www.asianefficiency.com/email-management/simple-guide-to-managing-your-email/). On the right hand side of this course site are my contact links.
+
+Even though email is the best way to contact me, feel free to skype me (you can just click on the skype button to complete the call provided you have skype installed). The first time you skype me, you will need to request that I add you as a contact. Make sure you use the skype button and don’t just search under my name otherwise you may end up connecting to the account my son uses on his xbox — which would be a bit creepy.
+
+If you are more comfortable with Google Hangouts, I have a few profiles on Google+…make sure you use the one linked in the sidebar. You may also contact me by phone (207.780.4410) but the response time will likely be slower than my email response time.
+
+## Project {-}
+
+If there is a project, this is the place
