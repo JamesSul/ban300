@@ -1,3 +1,1 @@
-This is a minimal example of a book based on R Markdown and **bookdown** (https://github.com/rstudio/bookdown). Please see the page "Get Started" at https://bookdown.org/ for how to compile this example.
-
-You can find the preview of this example at https://bookdown.org/yihui/bookdown-demo/
+This is most of my BAN 300 syllabus book based on R Markdown and **bookdown** (https://github.com/rstudio/bookdown). It doesn't include unit 11 as I haven't found a way to use a file as an authentication token in RTweet and I want to protect my auth keys.
