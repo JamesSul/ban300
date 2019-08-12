@@ -1,4 +1,4 @@
-# Intermediate Stuff
+# Introduction to R
 
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library(knitr)
@@ -18,4 +18,160 @@ head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no
 ```
 `r head_message`
 
-Short topic summary
+Unit 2 presents a somewhat less of a workload than unit 1. It is a chance for you to breathe, assimilate what you have already learned and review whatever you think needs additional focus. We will start building up the pace again through unit 5. At that point, things should start to smooth out a bit. We'll have covered enough R to take in a data set, clean it, and present it visually.
+
+## Media
+* Reading: [R-FAQ 2.10 - What is CRAN?](https://cran.r-project.org/doc/FAQ/R-FAQ.html#What-is-CRAN_003f)
+* Reading: [R Packages: A Beginner's Guide](https://www.datacamp.com/community/tutorials/r-packages-guide)
+* Video: [Matrices, Lists, and Data Frames (6:02)](https://youtu.be/f3E4NSYNC5g)
+* Video: [Tibbles, Packages (3:35)](https://youtu.be/EL4zTVS3Huw)
+
+## Lists
+
+A *list* is a generic vector that doesn't need to contain the same primitive data types. This makes referencing members a little more complex. We use the `list` function to create lists. Like matrices, we won't be using lists much in this class so I'll provide just a brief introduction.
+
+```{r}
+num <- c(1,2,3)
+names <-  c("Fred", "Ethel")
+status <- c(TRUE, TRUE, FALSE, FALSE)
+l <- list(num, names, status, 5)
+l[2]
+l[[2]][2]
+```
+
+Lists can get pretty tricky but notice if we use a single bracket, the object returned is another list so `l[2]` returns a list of one which contains a character vector with two elements. Using the double-bracket returns the actual element so `l[[2]]` returns a character vector of two elements. This is why when we type `l[[2]][2]` we are saying return the second element of the character vector (i.e., Ethel) whereas if we typed `l[2][2]` we would get an out of bounds because the list returned with `l[2]` contains only one element. `l[2][[1]][2]` would return a list of one, then take the first item in that list (a character vector) and return the second item in that vector -- which would be identical to typing `l[[2]][2]`. While we won't be working much with lists directly this semester, it is helpful to go back and review them at a later date because we will be using a specialized form of a list throughout the semester, namely -- the *data frame*.
+
+
+### Data Frames
+
+Data frames are lists that we can metaphorically think of as spreadsheets with some restrictions:
+
+* variable names (i.e., column names) must be unique within the data frame
+* all elements (columns) in the data frame are vectors.
+* all elements (columns) in the data frame have equal length.
+
+So when your data is in a format where columns represent variables, and rows typically represent an observation, data frames are the object that you most likely want to use to represent this data. Most forms of structured data fit nicely into a data frame.
+
+We use the `data.frame` function to create a data frame.
+
+```{r}
+rooms <- c("Living Room", "dining room", "kitchen")
+colors <- c("Navaho White", "Stonington Gray", "Edgecomb Gray")
+comments <- c("Patch ceiling hole - Bob", "Use a tinted primer - Joe",
+             "Look's pretty good - Ann")
+price <- c(245.30, 300, 180.25)
+house <- data.frame(rooms, colors, comments, price, stringsAsFactors = FALSE)
+```
+
+We created a data frame from the vectors we worked with earlier. They are all equal length and have the same data within the vectors. We can also view the data by clicking on the table icon next to the `house` variable in the environment pane and see the table as shown below.
+
+![dataframe](./img/df_enviro.png)
+
+Each column can be referenced by the convention `variable_name$column_name`, for example, `house$price` will return the price column as a numeric vector. I can also interact with it as we did with `mtcars` in the last lesson. I can reference rows and columns in a few different ways.
+
+* by index - e.g., `house[1,2]` will return the first row, second column of the data frame
+* by name - e.g., `house[1, "colors"]` will return the first row of the `colors` column
+* by name - e.g., `house$colors` will return the `colors` column **as a character vector** as will `house[,"colors"]`
+* by list index - e.g., `house[2]` will return the second column **as a data.frame object** as will `house["colors"]`
+* by list index - e.g., `house[[2]]` will return the second column **as a character vector** as will `house[,2]`
+
+You can also select multiple rows and columns by using combine and/or ranges (e.g., `house[1:2, c("rooms", "colors")]`)
+
+Finally, you can search for specific values in a data frame as shown below.
+
+```{r}
+house[rooms == "Living Room",]
+house[price > 200,]
+```
+
+Once again, you can see that there are many different ways to accomplish the same task in R. Everything that we've done so far has been using the base packages in R (i.e., the stuff installed by default). In the next unit, we'll show how to search within a data frame using additional packages that aren't installed by default. We'll also explain packages, the concept of tidy data, and go into more depth with data frames.
+
+## Factors
+
+When you first took statistics, you learned about different types or classification of variables. One reason why variable types become essential is that they determine the kind of analysis that can be performed. Generally speaking, we can classify data as being _numeric_ (e.g., height, weight, salary), _categorical_ (e.g., gender, color, hometown), or _ordinal_. Right now, we are not concerned with the numeric data.
+
+Let's start off by creating some data of houses we might have looked at when thinking about purchasing a property
+```{r}
+description <- c("blue cape near university", "small bungalo near ocean", 
+                "weird oval shaped home", "shag carpet place that smells like beer",
+                "block shaped home on busy street")
+price <- c(250000, 400000, 185000, 172000, 180000)
+color <- c("blue", "blue", "yellow", "yellow", "green")
+initial_impressions <- c("love", "love", "hate", "neutral", "hate")
+houses <- data.frame(description, price, color, initial_impressions, stringsAsFactors = FALSE)
+summary(houses)
+```
+
+Looking at a summary of the `houses` data, I see some detailed statistics regarding price but the other summary information is relatively meaningless. Let's make a minor modification to our data frame.
+
+```{r}
+houses$color <- factor(houses$color)
+summary(houses)
+```
+
+Notice that the summary for `color` now includes a count of the different colors. This is because we instructed R to make `color` a _factor_. Also notice when I created the data frame, I used the parameter `stringsAsFactors = FALSE` to tell R not to create factor variables from character data, which is the default behavior.
+
+```{r}
+str(houses)
+```
+
+Looking at the structure of `color` we can see that it is now defined as a factor with three levels (blue, green, and yellow). Internally, factors get stored as integers, but we now need to be careful when we treat them as strings. By default, a factor has `levels` that are in alphabetical order that corresponds to the integer values. In this case:
+
+* 1 = blue
+* 2 = green
+* 3 = yellow
+
+Now we can go back and follow the same process to make `initial_impressions` a factor.
+
+```{r}
+houses$initial_impressions <- factor(houses$initial_impressions)
+summary(houses)
+```
+
+You'll notice that the levels of `initial_impressions`, like `color` are also in alphabetical order. In reality, hate < neutral < love, which suggests that this might be an ordinal variable and not a categorical variable.  If we want to have a worst-to-first type of order, we can specify this when creating the factor by setting the parameters `levels` and `ordered`.
+```{r}
+houses$initial_impressions <- factor(houses$initial_impressions, levels = c("hate", "neutral", "love"), ordered = TRUE)
+summary(houses)
+```
+
+We have told R to make `initial_impressions` an _ordered factor_.
+
+```{r}
+str(houses)
+```
+
+If you have to clean and transform your data, it is often advisable not to use factors until right before you analyze data. This will become more apparent later in the semester. We'll also show you a different way to order factors using the `forcats` package in a few units.
+
+## Tibbles
+
+Finally, I want to briefly introduce you to an updated version of the data frame -- the `tibble`. It isn't going to make much sense yet, but tibbles make data frames slightly less frustrating to work with. For a full explanation, see the [package definition](https://cran.r-project.org/web/packages/tibble/vignettes/tibble.html), but it will become more evident after you have had more exposure to R. One thing you might notice is that they print a little more nicely. We won't be interacting with tibbles too much, but they will pop up again during the semester.
+
+```{r}
+houses
+```
+
+```{r}
+houses <- as_tibble(houses)
+houses
+```
+
+## Packages
+
+Packages are a collection of functions and data sets that are typically not a part of base R (i.e., they are developed by the community). While functions like `mean`, `median`, `max`, etc. are part of base R, the `as_tibble` function we just used is part of the `tibble` package which is loaded with dplyr.
+
+To install a package, we can use the `install.packages()` command or we can select Tools --> Install Packages in RStudio. By default, the available packages listed are from the [CRAN repository](https://cran.r-project.org/web/packages/), but we can also install packages from Bioconductor or Github.
+
+After a package is installed, if we want to use the functions or data sets that come with the package, we must load it using the `library` function as we have already done with `dplyr` and `knitr`.
+
+Some R packages have overviews of the package, called a "vignette". You can see what vignettes are available for packages that you have **loaded** using the `browseVignettes` function. This will launch a browser tab with links to the vignettes. You can also find out what packages and versions you have loaded, along with other useful information, by using the `sessionInfo` function as shown below. There will probably be more loaded than you expect as many packages have dependencies (i.e., they load other packages). We'll probably be using `sessionInfo` to diagnose some problems students might have during the semester.
+
+```{r}
+sessionInfo()
+```
+
+
+Most of the packages we will use in this course are part of the [tidyverse](https://blog.rstudio.com/2016/09/15/tidyverse-1-0-0/), which we will introduce in the next unit.
+
+## DataCamp Exercises
+
+This unit's DataCamp exercises have you finishing their Introduction to R course, which gives you the prerequisite knowledge required for many of their other courses.

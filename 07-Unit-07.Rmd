@@ -1,0 +1,59 @@
+# Your first assignment
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+unit_items <- schedule %>% filter(Unit == 7)
+start_date <- format(as.Date(unit_items$Start), format = "%A, %B %d %Y")
+end_date <- format(as.Date(unit_items$End), format = "%A, %B %d %Y")
+due_date <- format(as.Date(unit_items$Due.Date), format = "%A, %B %d %Y")
+due_items_long <- gsub(", ", "  \n* ", unit_items$Due.Long)
+span_message <- paste("<i>This unit spans <b>", start_date, " </b>through <b>", end_date, "</b>.</i>", sep="")
+due_message <- paste("At 11:59 PM on", due_date, "the following items are due:")
+head_message_items_due <- paste(span_message, "  \n<b>", due_message, "</b>  \n\n* ", due_items_long, sep="")
+head_message_no_items_due <- paste(span_message, "  \n<b>There are no items due this unit.</b>", sep="")
+head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no_items_due)
+```
+`r head_message`
+
+We finally get to start doing things in R! Assignment 1 is due with this unit. There are no readings or DataCamp exercises. You get to put what you already know into practice. Get started as early as possible. You don't want to get stuck on some technical issue in the eleventh hour.
+
+## Assignment 1
+
+The files [flouride.csv](http://jamessuleiman.com/teaching/datasets/fluoride.csv) and [arsenic.csv](http://jamessuleiman.com/teaching/datasets/arsenic.csv) were downloaded from the Maine Tracking Network and contain fluoride and arsenic levels, by town, for private well water samples tested by the State of Maine Health and Environmental Testing Laboratory (HETL) between the years 1999 and 2013. You can import them with the following commands:
+
+```{r}
+fluoride <- read.csv(url("http://jamessuleiman.com/teaching/datasets/fluoride.csv"),
+                    stringsAsFactors = FALSE)
+arsenic <- read.csv(url("http://jamessuleiman.com/teaching/datasets/arsenic.csv"),
+                    stringsAsFactors = FALSE)
+```
+
+For locations with fewer than 20 wells tested, only the number of wells tested, and the maximum value is displayed. All test results reported as less than the laboratory’s limit of detection were replaced with a value that is one-half of the detection limit. Unit abbreviations are mg/L for milligrams per liter, ug/L for micrograms per liter.
+
+Maine's Maximum Exposure Guideline for fluoride is 2 milligrams per liter (mg/L). For arsenic is 10 micrograms per liter (ug/L).
+
+The State of Maine Health and Environmental Testing Laboratory provided these data. The table was prepared by the Maine Environmental Public Health Tracking Program. The complete data set contains water test results from 46,855 private wells in Maine. Revision Date: 08/2015.
+
+The fields included in both csv files include:
+
+* `location` - the name of the town, township, or regional area in Maine
+* `n_wells_tested` - the number of wells tested.
+* `percent_wells_above_guideline` - percentage of wells that tested above the maximum exposure guidelines
+* `median` - mg/L for flouride, ug/L for arsenic
+* `percentile_95` - the 95th percentile readings in mg/L or ug/L
+* `maximum` - the maximum readings in mg/L or ug/L
+
+Prepare a report that has an interesting narrative that focuses on a subset of the data you find interesting that includes both arsenic and fluoride data. Your report should be uploaded to RPubs, and you should post a link to your RPubs report in Piazza. You are required to join the data. It is up to you to determine how to handle missing values. Your document title should be **exactly** `Assignment 1: <firstname> <lastname>` where `<firstname>` and `<lastname>` are your actual name. (_10 points_). Also, the HTML document you publish to RPubs must have the following elements:
+
+* at least two level two headers `##` and at least one bulleted list with at least two items `*` (_5 points_)
+* you must create a data frame or tibble that joins both arsenic and fluoride by location. (_10 points_)
+* at least one table showing relevant data that is not so long that it overwhelms the report (consider using the `head` command). **The code that creates the portion of the table must be displayed.** (_7.5 points_)
+* at least one chart. **For at least one of your charts, the code that created it must not be displayed.** (_7.5 points_)
+* a narrative discussing what you find interesting along with any issues you might have had preparing the data (_10 points_)
+* published on RPubs (_40 points_)
+* clickable link posted in Piazza *as a note* titled "`yourname`'s Assignment 1," where `yourname` is your actual name (_10 points_)
+
+The checklist above is implemented as a grading rubric in Blackboard. If you want to know where you received deductions, if any, click on your grade in the grade book, then select "View Rubric."

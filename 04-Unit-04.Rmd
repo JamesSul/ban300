@@ -1,0 +1,289 @@
+# Exploring data II
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+unit_items <- schedule %>% filter(Unit == 4)
+start_date <- format(as.Date(unit_items$Start), format = "%A, %B %d %Y")
+end_date <- format(as.Date(unit_items$End), format = "%A, %B %d %Y")
+due_date <- format(as.Date(unit_items$Due.Date), format = "%A, %B %d %Y")
+due_items_long <- gsub(", ", "  \n* ", unit_items$Due.Long)
+span_message <- paste("<i>This unit spans <b>", start_date, " </b>through <b>", end_date, "</b>.</i>", sep="")
+due_message <- paste("At 11:59 PM on", due_date, "the following items are due:")
+head_message_items_due <- paste(span_message, "  \n<b>", due_message, "</b>  \n\n* ", due_items_long, sep="")
+head_message_no_items_due <- paste(span_message, "  \n<b>There are no items due this unit.</b>", sep="")
+head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no_items_due)
+```
+`r head_message`
+
+This unit continues coverage of the tidyverse, specifically dplyr and ggplot2. It also presents information on visual perception and planning visualizations. In addition to the tidyverse, I'm going to load the `scales` and `ggthemes` packages. This unit has more video than usual.
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(scales)
+library(ggthemes)
+```
+
+## Media
+
+* Reading: [When did girls start wearing pink?](https://www.smithsonianmag.com/arts-culture/when-did-girls-start-wearing-pink-1370097/?c=y&page=1), smithsonian.com
+* Video: [dplyr window functions (4:33)](https://www.youtube.com/watch?v=FbGLsa9DV6w&feature=youtu.be)
+* Video: [Visual perception and size illusions (19:52)](https://youtu.be/0sQsDhBbgKc), Go Cognitive / Scott Murray
+* Video: [Perception (3:02)](https://youtu.be/Nc90FjfNjJY)
+* Video: [Preattentive processing (2:30)](https://video.maine.edu/media/Preattentive+processing/1_lvzggcyw)
+* Video: [Color (3:12)](https://youtu.be/bunBRXXN9qc)
+* Video: [Planning a visualization (3:37)](https://youtu.be/kpuSPU8diE0)
+* Video: [Religions and babies (13:20)](https://youtu.be/ezVk1ahRF78), Hans Rosling
+
+## dplyr window functions
+
+As defined in the `dplyr` documentation, a [window function](https://cran.r-project.org/web/packages/dplyr/vignettes/window-functions.html) is a variation on an aggregation function. Where an aggregation function, like `sum()` and `mean()`, takes n inputs and return a single value, a window function returns n values.
+
+The window functions we'll be dealing with in this class are often ranking functions (like `min_rank()`) and *offset* functions (like `lag()` which was introduced in the last unit). If you have ever worked with relational databases, window functions are commonly implemented in [SQL](https://en.wikipedia.org/wiki/SQL).
+
+The ranking and ordering functions you may use in `dplyr` are:
+
+* `row_number()`
+* `min_rank()` which allows for gaps in ranks (e.g., if two rows are tied for first, the next rank is third)
+* `dense_rank()` which doesn't allow for gaps in ranks (e.g., if two rows are tied for first, the next rank is second)
+* `percent_rank()` a number between 0 and 1 computed by rescaling min_rank to [0, 1].
+* `cume_dist()`  a cumulative distribution function. Proportion of all values less than or equal to the current rank.
+* `ntile()` a rough rank, which breaks the input vector into n buckets
+
+If you look at a ranking of `gpa`'s in the `got` data, 3.23 is tied for fourth place, and 2.84, which is the 6th row in the arranged data frame would be in sixth place using `min_rank()`, fifth place, using `dense_rank()`
+
+```{r row_number}
+got <- read.csv(url("http://jamessuleiman.com/teaching/datasets/got.csv"),
+                stringsAsFactors = FALSE)
+got %>% filter(row_number(desc(gpa)) == 6)
+```
+
+```{r mrank}
+got %>% filter(min_rank(desc(gpa)) == 6)
+```
+
+```{r drank}
+got %>% filter(dense_rank(desc(gpa)) == 5)
+```
+
+We could also use the `slice` verb to accomplish the same thing.
+
+```{r slice_rank}
+got %>% arrange(desc(gpa)) %>% slice(6)
+```
+
+
+We'll add the columns `p_rank`, `c_dist` and `ntile` to show you how the remaining ranking functions work. We'll use four buckets for `ntile()`
+
+```{r ptiles}
+got %>% select(lastname, firstname, gpa) %>% arrange(desc(gpa)) %>% 
+  mutate(p_rank = percent_rank(gpa), cdist = cume_dist(gpa), 
+         ntile = ntile(gpa, 4))
+```
+
+
+The offset functions you may use in `dplyr` are:
+
+* `lag()` returns the previous value in the vector - introduced in the last unit.
+* `lead()` returns the next value in a vector - the opposite of `lag()`
+
+If we wanted to know the gpa of the next better `lag()` and next worst `lead()` students I would use:
+
+```{r lead_lag}
+got %>% arrange(desc(gpa)) %>% mutate(nxt_better = lag(gpa), nxt_worst = lead(gpa))
+```
+
+We've covered a good portion of `dplyr` and most of what you'll be using for the remainder of the semester.
+
+## Perception
+
+[Colin Ware](http://ccom.unh.edu/vislab/colin_ware.html), a professor at UNH, covers perception in great detail -- in both of his books. It is relatively easy to follow visual design heuristics like "use high contrast," and learning some rules and guidelines for constructing visualizations will go a long way to improve your skills at creating good visualizations. Understanding human visual perception takes a great deal more work but will also enhance your ability to ascertain a certain level of mastery in creating visualizations. With regards to high contrast, if we see the image below, the lion's sand color is not in high contrast to the greenish hues of the tall grasses, yet we can spot the lion quite easily. We are genetically hardwired to see the lion as our genetic ancestry mostly doesn't include people that could not see the lion - they were eaten.
+
+![lion image](./img/lionGrass.jpg)  
+*Creative Commons licensed, Flickr user Heather Bradley*
+
+Before we get too far into why we so readily see the lion and how that relates to creating good visualizations, it is essential to understand that some graphics are well understood because they are part of our visual language and are more similar to words on a page. A graphic like the one shown below would be an excellent example of this. I've removed the legend. Take a second and see if you can guess what this graphic is showing?
+
+![Weather Map](./img/noaaweathermap.png)
+*NOAA Weather Map*
+
+If you guessed that this is a temperature map for the United States, you would be correct. The reason you were able to guess what the map was is that you have seen it before. It is part of your learned language. If graphical perception was purely based on learned graphical conventions, understanding human visual perception would not be necessary in creating visualizations. One would merely spend time learning the conventions. Conventions are relevant, however observing the lion in the tall grass isn't part of a learned language - it is sensory.
+
+As shown in the neuroscience video with Scott Murray, explaining visual perception to the layperson, with no background in neuroscience, is difficult. Here are the simplified steps he describes in the video:
+
+1. Light enters our eye.
+2. Gets transduced (i.e., converted from light signals to neural signals) by our retina into visual information.
+3. Visual information travels to the cortex.
+4. Stops in the lateral geniculate nucleus in the thalamus.
+5. Projects directly to the cortex in an area called V1 or primary visual cortex.
+6. V1 to other cortical regions (e.g., V2, V3, parietal cortex, temporal lobe, etc.).
+7. There are upwards of 30 different visual areas in the brain.
+8. Perception is a complex interaction that isn't fully understood. It also depends on what we are processing. For example, motion is processed differently than color.
+
+Sounds simple, right? Visual perception is an attempt by our brains to figure out what caused a pattern on our retina. In that process, the brain tries to prioritize what it thinks is important (e.g., the lion in the grass). This importance filtering is referred to as pre-attention. Look at the pattern below. Can you count how many times the number 5 appears in the list?
+
+13029302938203928302938203858293  
+10293820938205929382092305029309  
+39283029209502930293920359203920
+
+You had to attentively process the entire list to count the number of 5's. This probably took quite a bit of time. Try counting again using the list below.
+
+<p><font color="silver">130293029382039283029382038<font color="black">5</font>8293<br />1029382093820<font color="black">5</font>92938209230<font color="black">5</font>029309<br />39283029209<font color="black">5</font>029302939203<font color="black">5</font>9203920</font></p>
+
+That was quite a bit easier and illustrative of preattentive processing. We told your brain what was important by using shading or color intensity. Many visual features have been identified as preattentive. Christopher G. Healy summarizes them very well in the table below copied from his [site on perception in visualization](https://www.csc2.ncsu.edu/faculty/healey/PP/). On Healy's table, he also lists the citations for the psychology studies that examined each visual feature.
+
+<table border="1" cellspacing="0" cellpadding="2">
+<tr>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_orient.gif" alt="" border="1">line (blob) orientation<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_len.gif" alt="" border="1">length, width<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_closure.gif" alt="" border="1">closure<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_size.gif" alt="" border="1">size<br>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_curve.gif" alt="" border="1">curvature<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_den.gif" alt="" border="1">density, contrast<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_num.gif" alt="" border="1">number, estimation<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_hue.gif" alt="" border="1">colour (hue)<br>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_lum.gif" alt="" border="1">intensity, binocular lustre<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_isect.gif" alt="" border="1">intersection<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_term.gif" alt="" border="1">terminators<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_3d_depth.gif" alt="" border="1">3D depth cues, stereoscopic depth<br>
+</td>
+</tr>
+<tr>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_flick.gif" alt="" border="1">flicker<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_dir.gif" alt="" border="1">direction of motion<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_vel.gif" alt="" border="1">velocity of motion<br>
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_3d_light.gif" alt="" border="1"><br>lighting direction
+</td>
+</tr>
+<tr>
+<td align="center" valign="top" width="195"></td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_orient_3d.gif" alt="" border="1"><br>3D orientation
+</td>
+<td align="center" valign="top" width="195">
+<img src="./img/tg_npr.gif" alt="" border="1"><br>artistic properties
+</td>
+<td align="center" valign="top" width="195"></td>
+</tr>
+<tr>
+<td colspan="4" align="center" valign="top" width="798">
+<br> <font size="-1">Table 1: A partial list of preattentive visual features.</font>
+</td>
+</tr>
+</table>
+
+So how does this explain our rapid identification of the lion in the tall grass? The explanation is probably quite a bit more complicated than the observable pattern shifts between the lion and her surroundings. As humans, we probably tend first to look where things might be hiding. Nonetheless, the volumes of human visual perception research help us provide some guidelines and considerations when preparing graphics.
+
+My favorite synthesis of best uses of visual encodings is [this chart](http://complexdiagrams.com/wp-content/2012/01/VisualPropertiesTable.pdf), compiled by Noah Iliinksy. He gives simple guidelines for selecting visual encodings depending on the type of data you have (i.e., quantitative, ordinal, categorical, relational). Don't think of this as hard rules. It is more like suggested guidance in selecting visual encodings. For example, NOAA does use color to represent quantitative data (temperature) even though it is not recommended. Since the use of color in weather maps is so familiar, it has become part of our visual vocabulary and is not only considered acceptable but preferred.
+
+## Planning a Visualization
+
+Generally speaking, the starting point for planning a visualization is looking at the data. We typically want to get the data in a tidy format first. We'll use a local dataset from [data.maine.gov](https://data.maine.gov) -- Maine population by county (per decade, 1960-2010). We'll assume I don't have a specific question that I'm trying to answer; I want to see what might be interesting. These could include:
+
+* counties with abnormal growth rates (high or low)
+* shifts in population over time
+* etc.
+
+I've already downloaded and cleaned up the data to save you the trouble of going to data.maine.gov and downloading and tidying the original data.
+
+```{r, message=FALSE, warning=FALSE}
+county_pop <- read.csv(url("http://jamessuleiman.com/teaching/datasets/maine_county_population.csv"),
+                stringsAsFactors = FALSE)
+str(county_pop)
+```
+
+I want to quickly see if there is a growth rate story to be told, so I'll use ggplot2 to make small multiples for exploratory visualization. I'll be doing one chart for each county using facets, which have their specification in the layered grammar. We'll cover facets in more detail later in the semester. I'll do a county by county comparison, so my aesthetics will be:
+
+* x = year
+* y = population
+
+Because I'm interested in the growth rate, I'll use `geom_line` and `geom_point`.
+
+```{r}
+ggplot(county_pop, aes(x = year, y = population)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~ county)
+```
+
+It looks like Southern Maine grew, while Northern Maine did not. That would be a compelling story to tell on a map, but for this example, since I'm not using a map I'm going to compare the two most southeastern counties (York and Cumberland) to the two most northeastern counties. I'll still use the same aesthetics and geoms, but I'll change county from a facet to an aesthetic -- color.
+
+```{r}
+ggplot(county_pop %>%
+         filter(county %in% c("Aroostook", "Washington", "York", "Cumberland")), 
+       aes(x = year, y = population, col = county)) +
+  geom_line() +
+  geom_point()
+```
+
+The scientific notation on the y-axis is bugging me, so I'm going to change it to actual numbers with a comma. We'll use the `scales` package written by Hadley Wickham which has a convenient comma formatter. We'll add to our layered grammar with scales. There is a variety of syntax choices for scales, but since the scientific notation that we want to change is showing on the y-axis, we'll use the `scale_y_...` function where `...` is continuous for a continuous variable and discrete for a discrete variable. Population is a continuous variable, so we'll change the labels on the y-axis using `scale_y_continuous(labels = comma)`.
+
+```{r}
+ggplot(county_pop %>%
+         filter(county %in% c("Aroostook", "Washington", "York", "Cumberland")), 
+       aes(x = year, y = population, col = county)) +
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(labels = comma)
+```
+
+Finally, we'll change the breaks on the y-axis to increments of 50,000 and use a red-green colorblind friendly palette. We'll use the simple `scale_color_colorblind()` function from package `ggthemes`. You'll notice that the color differences aren't as easy to notice as the default ggplot2 palette. If we wanted more control or options over our colorblind palette, we could use the `dichromat` package or the colorblind friendly palettes from [colorbrewer.org](http://colorbrewer2.org). Keep in mind that there are also computer tools for colorblind users that automatically transform colors on websites.
+
+```{r}
+ggplot(county_pop %>%
+         filter(county %in% c("Aroostook", "Washington", "York", "Cumberland")), 
+       aes(x = year, y = population, col = county)) +
+  geom_line() +
+  geom_point() +
+  scale_y_continuous(labels = comma, breaks = c(50000, 100000, 150000, 200000, 250000)) +
+  scale_color_colorblind()
+```
+
+
+## DataCamp Exercises
+
+There are two DataCamp exercises due this unit that continue coverage of dplyr and ggplot2. These exercises will complete the DataCamp "Introduction to the Tidyverse" course. DataCamp also provides certificates for these courses and the ability to share your completion on LinkedIn, which is always a good resume-booster.
+
+
+## Credits
+
+Lion photo, [HeatherBradleyPhotography](https://www.flickr.com/photos/senzenina/) ![by](./img/32px-Cc-by_new.svg.png)![nc](./img/32px-Cc-nc.svg.png)![sa](./img/32px-Cc-sa.svg.png) Some rights reserved  
+(used with author permission)[A partial list of preattentive visual features](https://www.csc2.ncsu.edu/faculty/healey/PP/), Christopher G. Healy  
+[Properties and Best Uses of Visual Encodings](http://complexdiagrams.com/wp-content/2012/01/VisualPropertiesTable.pdf), Noah Iliinsky ![by](./img/32px-Cc-by_new.svg.png)![sa](./img/32px-Cc-sa.svg.png)  Some rights reserved  
+[Color Blind Essentials](http://www.color-blindness.com/color-blind-essentials/), by Colblindor

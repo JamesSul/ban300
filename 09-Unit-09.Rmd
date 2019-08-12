@@ -1,0 +1,266 @@
+# Tidy data
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+unit_items <- schedule %>% filter(Unit == 9)
+start_date <- format(as.Date(unit_items$Start), format = "%A, %B %d %Y")
+end_date <- format(as.Date(unit_items$End), format = "%A, %B %d %Y")
+due_date <- format(as.Date(unit_items$Due.Date), format = "%A, %B %d %Y")
+due_items_long <- gsub(", ", "  \n* ", unit_items$Due.Long)
+span_message <- paste("<i>This unit spans <b>", start_date, " </b>through <b>", end_date, "</b>.</i>", sep="")
+due_message <- paste("At 11:59 PM on", due_date, "the following items are due:")
+head_message_items_due <- paste(span_message, "  \n<b>", due_message, "</b>  \n\n* ", due_items_long, sep="")
+head_message_no_items_due <- paste(span_message, "  \n<b>There are no items due this unit.</b>", sep="")
+head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no_items_due)
+```
+`r head_message`
+
+This unit introduces cleaning and tidying data. If you end up working in analytics, this is likely how you will spend most of your time because data is messy.
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+```
+
+## Media
+
+* Reading: [Tidy Data](http://vita.had.co.nz/papers/tidy-data.pdf), Wickham, Journal of Statistical Software
+* Video: [Tidying Data](https://youtu.be/KaLuZ6nsTvE)
+
+## Tidy data
+
+If you have had some exposure to relational database normalization, the concept of tidy data is relatively simple to understand -- it is essentially E.F. Codd's [third normal form](https://en.wikipedia.org/wiki/Third_normal_form). I'm going to go out on a limb and assume that most students aren't familiar with normalization or what the third normal form is. Through the lens of an analyst, tidy data has the following attributes:
+
+* each variable forms a column
+* each observation forms a row.
+* each type of observational unit forms a table.
+
+The assigned Wickham article is very well written and goes into great detail with multiple examples of tidy and messy data. We are going to use a slightly messy data set to help reinforce the understanding you'll gain from reading the article.
+
+## Reading in a text file
+
+We've worked with a cleaned version of the Maine county population data. I'll show you the steps that were taken to get it into a tidy form. Go to [data.maine.gov](http://data.maine.gov) and enter "population" in the search box. Go to "Maine population 1960 - 2010 by counties" and download as a CSV file. 
+
+So far, we haven't spent any time discussing file management in R. For this unit; we'll keep it simple and keep our .R script file and our .csv data file in the same working directory. In the next unit, we'll introduce the project management features of RStudio.
+
+The working directory is merely the directory/folder that assumes that you are working in. One of the advantages of this is that I can refer to a file in my working directory without giving the entire file path to R. You can always check what your working directory is set to by typing `getwd()`. You can also set your working directory with the `setwd()` command, but since we are using RStudio, we'll do that using the user interface.
+
+After you launch RStudio, use the files pane to navigate to a directory/folder where you want to store your work. If you're going to create a new folder, click "New Folder" in the file pane after you have navigated to the folder you want to put the new folder in. Next, navigate to that folder via the files pane and under the more drop-down menu, select "set as working directory."
+
+Now move the CSV file you downloaded to your working directory. If you forgot the path to your working directory, remember you can see it by typing `getwd()`.
+
+Now go ahead and create a new R Script file in your working directory (File --> New File --> R Script). Give it any name you like but I recommend you use the script file for this unit instead of the console so you can save and review your work -- *reminder: you can click run to run any line from your script file*.
+
+We are going to use `read.csv` to read the Maine population CSV file into a data frame. You'll need to remember the file name and whether or not the file has a header line.
+
+```{r}
+county_pop <- read.csv("./data/Maine_Population_1960-2010_by_Counties.csv", header = TRUE, 
+                stringsAsFactors = FALSE)
+```
+
+We didn't name the CSV file, and it does have a rather long name, but it is an acceptable file name. Generally speaking, you want to have meaningful filenames and avoid using spaces, special characters (other than underscore `_` and hyphen `-`).
+
+```{r}
+dim(county_pop)
+names(county_pop)
+head(county_pop)
+```
+
+We've introduced a couple of new functions that are a little redundant to more robust functions like `str`. `dim` shows us the dimensions of the data frame by rows and columns. `names` shows us the variable names in the data frame (it returns the column names as a character vector and can also be used to set/rename columns). Looking at the data frame, we can tell that it isn't tidy. If I look at the six variables dealing with population, I can see that there are several issues related to Wickham's Tidy Data article (section 3).
+
+* The `Total.Population...` columns contain both a variable name `population` and a value (e.g., 1970).
+* The population columns store multiple variables (`population` and `year`).
+* The `County` column stores multiple variables (`county` and `state`).
+* The `Location` column stores multiple variables (`latitude` and `longitude`)...also, we won't be using this data.
+
+When analysts are confronted with a data set like this, they often call it a "wide" data set. While Wickham considers wide datasets un-tidy, there are some occasions where wide data is desirable, including:
+* some tabular reports
+* some specific types of statistical analysis (e.g., repeated measures, MANCOVA)
+
+When we transform wide data to long (or tall) data, we are making it tidy (*note: Wickham states he explicitly avoids using the terms wide and tall because they are imprecise*). We are going to tidy our county population data using the `tidyr` package, which loads with the tidyverse.
+
+Before we do any of that, I'm going to rename my columns using all lowercase and change the population variable names to just their year.
+
+```{r}
+names(county_pop) <- c("county", "1960", "1970", "1980", "1990", "2000", "2010", "location")
+names(county_pop)
+```
+
+### Wide to long and back
+
+We are going to transform `county_pop` from wide to long in steps and then show you how to do it in one fell swoop. First, I'm going to address the population/year combined variable.
+
+
+```{r}
+library(tidyr)
+county_pop2 <- gather(county_pop, year, population, -c(county, location))
+head(county_pop2)
+str(county_pop2)
+```
+
+The `gather` function in tidyr collapses your data into key-value pairs. This is going to be difficult to grasp until you've done it a few times. In this case, we were dealing with a single column containing two variables. For example, the column we renamed to `1960` contains the year - 1960 and the population for that county (which is the value). The key:value pair is year:population so if you look at the arguments to `gather`, they are:
+
+1. the data frame
+2. the key `year`
+3. the value `population`
+4. the columns that aren't part of the key:value pair - `county` and `location`
+
+There is a lot of complexity to `gather` that we aren't covering but the primary challenge to using gather is to identify the key:value pair.
+
+One other thing to note is that the key (i.e., year) is converted to a factor variable. We haven't discussed factors until now, but factors are stored in two components. The original values are stored as an internal vector of character strings (e.g., "1960", "1970", ...) and the values are stored as integers (e.g., 1, 2, ...). The internal vector of character strings is then mapped to the integers (e.g., 1 = "1960", 2 = "1970", etc.). Because we might want actually to perform arithmetic calculations on year, we don't want to have a factor variable in this situation, so we use the `convert = TRUE` argument, which we normally want to do when the key is numeric, integer, or logical.
+
+```{r}
+county_pop2 <- gather(county_pop, year, population, -c(county, location), 
+                      convert = TRUE)
+str(county_pop2)
+```
+
+The next item we will clean in our data frame is they way county contains extraneous information (e.g., county should simply contain "Androscoggin" and not "Androscoggin County, Maine".
+
+```{r}
+county_pop2 <- mutate(county_pop2, county = str_replace(county, " County, Maine", ""))
+head(county_pop2)
+```
+
+The `mutate` function in dplyr can be used to change the values of a variable. The `str_replace` function is part of the pattern matching and replacement functions in tidyverse's `stringr` that use [regular expressions](https://en.wikipedia.org/wiki/Regular_expression). Here we are using the arguments to define where the string resides (`county`), the pattern (`" County, Maine"`), and the replacement (`""`). If we still wanted to keep the state name and add a variable `state` we could use `mutate` to add that variable to our dataframe with `county_pop2 <- mutate(county_pop2, state = "Maine")` but I'll assume we don't need to add that data.
+
+Finally, we want to drop the location data from our data frame.
+
+```{r}
+county_pop2 <- select(county_pop2, -location)
+head(county_pop2)
+```
+
+By using `-location`, I'm telling `select` to select all the columns except the `location` column. I could have also used `select(county_pop2, county, year, location)` for the same results.
+
+If you look at what we did to our data frame after changing the variable names, we transformed it from wide to long using a key:value pair, then removed the extraneous " County, Maine" from the county names, and finally removed the `location` column. Below, I'll perform the same operations in a different sequence using the pipe operator `%>%`
+
+1. Drop `location`
+2. Remove `" County, Maine"`
+3. Transform from wide to long (i.e., tidy the data frame).
+
+```{r}
+county_pop3 <- county_pop %>% select(-location) %>% mutate(county = str_replace(county, " County, Maine", "")) %>%
+  gather(year, population, -county, convert = TRUE)
+head(county_pop3)
+```
+
+If I want to convert the data frame back to a wide format, I can use the `spread` function in `tidyr` fairly easily...all I have to do is identify the key and value (which we did earlier). I'll use the pipe notation from here on out when applicable.
+
+```{r}
+county_pop_wide <- county_pop3 %>% spread(year, population)
+head(county_pop_wide)
+```
+
+I encourage you to review the vignettes (which are long-form documentation with examples) for `dplyr` and `tidyr`. You can access them with `vignette("introduction", package="dplyr")` and `vignette("tidy-data", package="tidyr")`. They are usually a good overview of the package with lots of examples.
+
+## String manipulation
+
+We already used `str_replace` in the example above. Some other common `stringr` functions include:
+
+* `str_trim` - trims trailing and leading whitespace, often an issue with fixed-width files.
+* `str_detect` - used for detecting patterns (commonly used in data validation and cleaning, also in text analytics)
+
+`str_trim` is fairly strightforward:
+
+```{r}
+padded_text <- ("  Hello World!      ")
+str_trim(padded_text)
+```
+
+For `str_detect` we'll introduce a pattern matching language called regular expressions.
+
+
+## Regular expressions
+
+The ability to manipulate strings is an important skill to have when cleaning data and also when doing lexical analysis. One of the standard languages for finding patterns in strings is [regular expressions](https://en.wikipedia.org/wiki/Regular_expression). There are a variety of ways to implement a regular expression (also known as regex or regexp) in R. The `stringr` functions we just introduced support regex commands. In the examples below, we use `str_detect` in combination with regular expressions. In the first example, we see an issue -- the input vector, `block_of_text`, has only one element so as long as the search is matched, it will always return the only element `[1]`
+
+```{r}
+block_of_text <- "Aluminum, as it is known in the United States and Canada 
+  is typically referred to as Aluminium by the rest of the world. Unbeknowst 
+  to most North American's, Aluminium is the more common spelling of the word.
+  It is important to note that iron is a nonaluminum."
+str_detect(block_of_text, "[Aa]lumini?um")
+```
+
+We can fix this problem by performing [tokenization](https://en.wikipedia.org/wiki/Tokenization_(lexical_analysis)), which breaks the string down to individual parts -- in this case words. We'll use the `strsplit()` function in R to accomplish this. Since the `strsplit()` function returns a list, we use `unlist` to store it as a vector. Note, we are using a single space as a separator so the punctuation will get attached to words. Because `str_detect` is part of the tidyverse, we can use the pipe operator.
+
+```{r}
+word_vector <- unlist(strsplit(block_of_text, " "))
+word_vector %>% str_detect("[Aa]lumini?um")
+```
+
+If we want to see the actual words that are matching our pattern, we could use the boolean vector as the index reference to `word_vector`.
+
+```{r}
+matches <- word_vector %>% str_detect("[Aa]lumini?um")
+word_vector[matches]
+```
+
+
+You'll notice that our regular expression is matching on the word nonaluminum as well. If this isn't intended and we want the word itself we should look at delimiting the boundary of the word. In regex, word boundaries are defined by the metacharacter `\b` so our regular expression becomes `\b[Aa]lumini?um\b` where `\b` can represent any non-word character (e.g., space or punctuation). One thing to keep in mind is that R uses the backslash character to start [escape sequences](https://en.wikipedia.org/wiki/Escape_sequence), so inside of a string enclosed in quotes, we write the expression as `\\b[Aa]lumini?um\\b` where the double backslash tells R we are using the backslash character.re
+
+```{r}
+matches <- word_vector %>% str_detect("\\b[Aa]lumini?um\\b")
+word_vector[matches]
+```
+
+Regular expressions are commonly used in analytics to turn text into data for analysis. To do this, we typically use the more meaningful parts of text to impart meaning. This involves finding particular characters, words, or patterns that we want to include or exclude from analysis. In these tutorials, we are only going to scratch the surface of what can be accomplished with regular expressions.
+
+Below is a list of potential email addresses:
+
+1. student@maine.edu
+2. student.last@yahoo.com
+3. student@maine.educ
+4. student@maine.redu
+5. student@.edu
+6. student2@usm.edu
+7. student@maine.edu.
+8. student.maine.edu
+9. student@..edu
+10. @maine.edu
+
+If I asked you which emails are from educational domains, the correct answer would be 1,6. We will build our regular expression to accomplish this in a stepwise manner. First I want to capture all emails that end in ".edu". Using syntax we have already learned, you might first attempt `.edu\b`, but you would immediately run into a problem because `.` is a meta character that means "any character except line break". Therefore, we would use `\.` to escape out the meta character and tell regex we are using the character `.`. This gives us `\.edu\b` which would exclude email addresses 2-4, but you might not expect it to return address 7. It would because the `\b` word boundary accepts space or punctuation as the end of the word. We would use the end of string anchor `$` instead, giving us `\.edu$`, which would exclude address 7 as well.
+
+Well-formed email addresses have the format "<local part>@<lower domain>.<top level domain>" So far, we have addressed the top level domain (.edu) and at this point, we'll over-simplify and present a solution that will catch a majority of the malformed emails, but probably not all of them. The lower domain may contain numbers, letters, and certain characters (e.g., ., -, _) but must end with a character or number, and the local part allows the same set of characters plus (%, +). There are some other constraints for email addresses and character set issues that we aren't going to discuss so we can simplify the problem and provide a solution that will still catch an overwhelming majority of the malformed emails. To summarize, the remaining sections we have to account for are:
+
+* the character before the .edu `letter or number`
+* the rest of the lower domain part `letter, number, ., -, _`
+* the @ character
+* the local part `letter, number, ., -, _, %, +`
+
+To address the character before the .edu (letter or number), we would use the character class brackets `[]` and use the syntax `A-Z` to represent letters and `0-9` to represent numbers (when we implement this in R, we will tell `str_detect` to accept upper or lower case letters. Our regular expression now becomes `[A-Z0-9]\.edu$`.
+
+For the rest of the lower domain part, we need to add the additional characters `., -, _` to our regular expression and apply it to multiple characters. Inside of character class brackets, the only metacharacters that have meaning are backslash and hyphen (which designates a character range). If we put the hyphen as the last character in the class brackets, we don't need to escape it out, and the character set becomes `[A-Z0-9._-]` and to specify multiple characters, we use the `+` quantifier which means "one or more of the patterns to the left". Our updated expression becomes `[A-Z0-9._-]+[A-Z0-9]\.edu$`.
+
+Adding the @ character is very simple `@[A-Z0-9._-]+[A-Z0-9]\.edu$`.
+
+Finally, the local part just adds the characters `%, +` to our character class `[A-Z0-9._%+-]` and using the `+` quantifier again, along with a start of string character `^` we get `^[A-Z0-9._%+-]@[A-Z0-9._-]+[A-Z0-9]\.edu$`.
+
+Now when we `str_detect` this in R, we just need to escape out the backslash to indicate that we mean backslash and not escape (i.e., `\\`) and we use the `ignore_case=TRUE` option nested in the `regex` function to tell str_detect to conduct a case-insensitive search based on our regular expression. We could also use case conversion functions to accomplish the same thing.
+
+```{r}
+emails <- c("student@maine.edu", "student.last@yahoo.com", "student@maine.educ", "student@maine.redu", 
+            "student@.edu", "student2@usm.edu", "student@maine.edu.", "student.edu", "student@..edu", 
+            "@maine.edu")
+matches <- emails %>% str_detect(regex("^[A-Z0-9._%+-]+@[A-Z0-9._-]+[A-Z0-9]\\.edu$", ignore_case = TRUE))
+emails[matches]
+```
+
+Finally, we'll take a quick look back at our `county_pop` example.
+
+```{r}
+head(county_pop)
+```
+
+Notice the pattern is `<county name> County, <state name>`. In this case, there is only one state, but if we wanted a more generic pattern that would work with all states, we would be looking at removing the word " County" and everything to the right. The pattern for this is straightforward: `"\sCounty.*"`
+
+```{r}
+head(county_pop %>% mutate(county = str_replace(county, "\\sCounty.*", "")))
+```
+
+## DataCamp Exercises
+
+The DataCamp exercises add some more depth to `tidyr`, but give more straightforward examples of string manipulation. There are also some helpful tips on working with dates. 

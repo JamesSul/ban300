@@ -1,0 +1,80 @@
+# Open data
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+unit_items <- schedule %>% filter(Unit == 10)
+start_date <- format(as.Date(unit_items$Start), format = "%A, %B %d %Y")
+end_date <- format(as.Date(unit_items$End), format = "%A, %B %d %Y")
+due_date <- format(as.Date(unit_items$Due.Date), format = "%A, %B %d %Y")
+due_items_long <- gsub(", ", "  \n* ", unit_items$Due.Long)
+span_message <- paste("<i>This unit spans <b>", start_date, " </b>through <b>", end_date, "</b>.</i>", sep="")
+due_message <- paste("At 11:59 PM on", due_date, "the following items are due:")
+head_message_items_due <- paste(span_message, "  \n<b>", due_message, "</b>  \n\n* ", due_items_long, sep="")
+head_message_no_items_due <- paste(span_message, "  \n<b>There are no items due this unit.</b>", sep="")
+head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no_items_due)
+```
+`r head_message`
+
+This unit is mostly about assignment 2 and working with open data, which is described below.
+
+## Media
+
+* Reading: [Sunlight as a Disinfectant](https://opengovdata.io/2014/sunlight-as-disinfectant/), Tauberer, Open Government Data: The Book, 2014
+* Reading: [Clear water: forecasting Chicago's beach water quality](http://chicago.github.io/clear-water/)
+* Reading: [Reproducible Analytical Pipelines](https://dataingovernment.blog.gov.uk/2017/03/27/reproducible-analytical-pipeline/), Matt Upson, Data in government blog at gov.uk, 2017
+* Reading: [Text analysis of Trump's tweets confirms he writes only the (angrier) Android half](http://varianceexplained.org/r/trump-tweets/), David Robinson, Chief Data Scientist at DataCamp, Variance Explained blog.
+
+
+## Assignment 2
+
+In assignment 1, you worked with open data for Maine well testing. For this assignment, you must find an open dataset that is from a country, city, or region outside of the United States. Browse some of the sites below or find something on your own. Pick any data you find interesting and create a summary report of what you find interesting in the data. Your report must contain the following elements:
+
+* a description of how you verified that the data is open and a link back to the website where you found it (_10 points_)
+* [code folding](https://bookdown.org/yihui/rmarkdown/html-document.html#code-folding) for all code, initially set to `hide` (_10 points_)
+* at least two ggplot2 charts (_20 points_)
+* at least one nicely formatted table that is **not too long** so that it overwhelms the report formatted using [kable](https://bookdown.org/yihui/rmarkdown/r-code.html#tables) (_10 points_)
+* a narrative discussing what you find interesting along with any issues you might have had preparing the data (_10 points_)
+* published on RPubs (30 points)
+* a clickable link posted in Piazza as a note titled “`yourname`’s Assignment 2,” where `yourname` is your actual name (_10 points_)
+
+## Public vs. open
+
+Most of the web is publically available. You can get data by scraping sites and some companies have an interface to access their data, like [Twitter](https://developer.twitter.com/content/developer-twitter/en.html). Just because data is publically available, doesn't mean it is open. Datacrunch had a visualization contest where they archived all of President Trump's tweets. They were [forced to take down the dataset](https://data.world/datacrunch/every-donald-trump-tweet) due to Twitter's terms of service. This raises an important point. While we tend to think of all the data on the web as "open," it very clearly isn't. When in doubt, check the terms of service for using data from a website or service and when scraping data from the web, always check [robots.txt](https://en.wikipedia.org/wiki/Robots_exclusion_standard).
+
+Open data is free to access, reuse, and redistribute. The only potential restriction on open data is [attribution and share-alike](https://creativecommons.org/licenses/by-sa/3.0/us/). Governments and non-profit organizations provide much of the open data on the web. Not all government data is open. For example, the US government has data containing social security numbers for all of its citizens. That data is not open, and it would be irresponsible for the government to release that data. There are several benefits to open data. From an analytics perspective, two of the larger ones are:
+
+* transparency - sunlight is the best disinfectant
+* crowdsourcing - large numbers of people can help identify and solve problems
+
+Chicago has one of the better developed open data portals resulting in several successful civic projects - you can [browse the project site](http://dev.cityofchicago.org/projects/). Notice that several of the models were built in R.
+
+## Open examples
+
+The following is a sampling of some of the better English-language open data sources.
+
+### International/Multi-country
+
+* [eurostat](http://ec.europa.eu/eurostat)
+* [OECD](https://data.oecd.org)
+* [UN Food and Agriculture](http://www.fao.org/statistics/en/)
+* [World Bank](https://data.worldbank.org)
+* [World Trade Organization](http://stat.wto.org/Home/WSDBHome.aspx)
+
+### Country specific
+
+* [Census (USA)](https://www.census.gov/data.html)
+* [data.gov (USA)](https://www.data.gov)
+* [data.gov.au (Australia)](https://data.gov.au)
+* [data.gov.uk (UK)](https://data.gov.uk)
+* [Statistics Iceland](https://statice.is)
+
+### Regional
+
+* [London](https://data.london.gov.uk)
+* [Maine](https://data.maine.gov)
+* [NYC](https://opendata.cityofnewyork.us)
+* [San Francisco](https://datasf.org/opendata/)
+* [Vancouver](https://vancouver.ca/your-government/open-data-catalogue.aspx)

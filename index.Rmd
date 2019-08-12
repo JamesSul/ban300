@@ -1,14 +1,17 @@
 --- 
-title: "A Minimal Syllabus Example"
+title: "BAN 300: Foundations of Data Management"
 author: "James Suleiman"
 date: "`r Sys.Date()`"
 site: bookdown::bookdown_site
 output: bookdown::gitbook
+config:
+  toc:
+    collapse: section
 documentclass: book
 bibliography: [book.bib, packages.bib]
 biblio-style: apalike
 link-citations: yes
-github-repo: rstudio/bookdown-demo
+github-repo: JamesSul/ban300
 description: "This is a minimal example of using the bookdown package to write a book. The output format for this example is bookdown::gitbook."
 ---
 
@@ -21,45 +24,133 @@ knitr::write_bib(c(
 ), 'packages.bib')
 ```
 
-Welcome to the class. Here is a description.
+Welcome to the BAN 300: Foundations of Data Management. This course is largely about the janitorial work for business analytics. You won't be able to impress your friends with what you learn but you will increase your own productivity immensely. You'll also become proficient with the R language, which is [fairly popular](http://blog.revolutionanalytics.com/popularity/). This class is the prerequisite for all other courses in the Business Analytics major at USM.
 
 ## Pre-class checklist {-}
 
-Before the class starts, you are expected to:
+By the first day of class, you are expected to:
 
-* do this
-* then this
-* and even this
+1.  Review all the materials through unit 1 - [getting started] on this website.
+2.  Watch the [welcome video](https://youtu.be/G9WkFO2zMiQ).
+3.  Sign up for [Piazza](https://piazza.com/usm.maine/fall2019/ban300). Make sure your name accurately reflects what is in MaineStreet.
+4.  accept the invite to DataCamp I email you. I'll be sending them to your maine.edu accounts the week before classes start and again on the first day of classes. DataCamp is free for the entire semester.
+5.  Install R and RStudio on your computer (see Unit 1 for details)
+6.  After you have completed all the items above, sign up for your free [RPubs](https://rpubs.com/) account.
 
 ## Schedule {-}
-
-This is the only place you'll find due dates.
 
 _last updated: `r Sys.Date()`_
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 library(knitr)
 library(dplyr)
-# first unit end date is the second Friday of the semester
-# every other unit ends Friday
 schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
 output_schedule <- schedule %>%
   mutate(Date = substr(Start,6,10), Due = substr(End, 6, 10)) %>%
   select(Date, Unit, Topic, Items_due = Due.Short, Due)
-kable(output_schedule, keep.line.breaks=TRUE)
+kable(output_schedule)
 ```
 
 ## Syllabus {-}
 
-All your syllabus junk goes here.
+### Prerequisites {-}
+
+MAT 210 or other approved statistics course - see [http://usm.maine.edu/sb/stats](http://usm.maine.edu/sb/stats) for approved courses (C- or higher grade).
+
+### Reference Texts (suggested and free) {-}
+
+`r include_graphics("./img/cover_gwick.png")``r include_graphics("./img/cover_peng.png")``r include_graphics("./img/YaRrr_Cover.jpg")`   
+Most of the material will be on this site and in the DataCamp exercises. Here are some really good reference books available online for free:
+
+* [R for Data Science](http://r4ds.had.co.nz/), Grolemund and Wickham
+* [R Programming for Data Science](https://bookdown.org/rdpeng/rprogdatascience/), Peng
+* [YaRrr! The Pirate's Guide to R](https://bookdown.org/ndphillips/YaRrr/), Phillips
+
+### Course Tools {-}
+
+**This class is supported by [DataCamp](https://www.datacamp.com/enterprise/ban-300-foundations-of-data-management-522db433-10f0-41e3-9339-29240beac430)**, the most intuitive learning platform for data science. Learn R, Python and SQL the way you learn best through a combination of short expert videos and hands-on-the-keyboard exercises. Take over 100+ courses by expert instructors on topics such as importing data, data visualization or machine learning and learn faster through immediate and personalised feedback on every exercise. You will have access to the entire DataCamp course library for free for the duration of this course. I'll make an announcement in Piazza detailing the effective dates.  
+**Blackboard** will only be used as a grade repository.  
+**[Piazza](https://piazza.com/usm.maine/spring2019/ban300/home)** will be used for announcements, discussion, etc.  
+**[R](https://cran.r-project.org/)** is the analytics tool we will be using.  
+**[RStudio](https://www.rstudio.com/)** is the Integrated Development Environment (IDE) and the way you will be accessing R.  
+**[RPubs](https://rpubs.com/)** is where we will be publishing our assignments and project.  
+The class [RStudio Server]() is a backup that you should **only use in an emergency**. See Piazza for details.
+
+### Grading {-}
+
+DataCamp Exercises: 50%  (3 lowest grades dropped 23 - 3 = 20 @ 2.5% each)  
+Participation (in Piazza): 15%
+Assignments: 15%  (3 @ 5% each)
+Final Project: 20%  
+_Under no conditions will any items be accepted late in class_
+
+Class participation will be solely judged by your contributions in Piazza. To receive full credit, you must:
+
+* Provide constructive comments on at least two assignments that are not your own.
+* Ask or answer at least two questions in Piazza.
+
+At the end of the semester, if you have questions about your participation grade please first view the grading rubric in the Blackboard gradebook by selecting your grade and then selecting "View Rubric".
+
+### Learning Goals {-}
+
+Upon successful completion of this course, students will:
+
+* manipulate data from a variety of sources
+* translate raw data into a format suitable for analysis
+* analyze and visualize data
+* integrate their analysis into beautiful reports
+* gain proficiency with the R language
+
+### ADA {-}
+
+At any point in the semester, if you encounter difficulty with the course or feel you could be performing at a higher level, please consult with me. Students experience difficulty for a variety of reasons. Help is also available through the Counseling Center, 105 Payson Smith (780-4050), and the Office of Academic Support for Students with Disabilities, 237 Luther Bonney (780-4706; TTY 780-4395).
+
+Adaptations: The Americans with Disabilities Act of 1992 mandates the elimination of discrimination against persons with disabilities. If you need course adaptations or accommodations because of disability please contact the [Disability Services Center](https://usm.maine.edu/dsc), 2nd floor, 237 Luther Bonney Hall (780-4706; TTY 780-4395).
+
+### Conduct and Academic Integrity {-}
+
+The USM Student Academic Integrity Policy will be vigorously enforced in this class. Common sense should be your guide for how to behave online. For those that need a refresher, [here is a link to the USM Student Conduct Code](https://usm.maine.edu/sites/default/files/Office%20of%20the%20Provost/STUDENT%20CONDUCT.pdf). Because this is an online class, I’ll make a special mention of this. Do not flame people in the forums. Treat each other with civility and respect.
+
+### Repeating Courses {-}
+
+Any School of Business major or minor who has enrolled in an ABU, ACC, or BUS course more than twice must, before continuing in that course, complete and have approved by the Department Chair, a “ course condition form (available from the School of Business academic advisors). Failure to do so may result in course credit disqualification. Non-business students should consult specific policies that are applicable to their majors.
+
+### School Mission {-}
+
+We prepare and inspire current and future leaders, and stimulate economic growth by providing quality learning opportunities, valuable research and professional service, all in partnership with the business community.
 
 ## Contact {-}
 
-There are a variety of ways to contact me. My office is in 322 Luther Bonney. I am good about responding to emails (suleiman@maine.edu) within 24 hours (48 on weekends). I typically check my emails twice per day (late morning and late afternoon). If you find this rigid email schedule somewhat odd, [this link pretty much describes the email system I have in place](http://www.asianefficiency.com/email-management/simple-guide-to-managing-your-email/). On the right hand side of this course site are my contact links.
+There are a variety of ways to contact me. My office is in 322 Luther Bonney. I am good about responding to emails (suleiman@maine.edu) within 24 hours (48 on weekends). I typically check my emails twice per day (late morning and late afternoon). If you find this rigid email schedule somewhat odd, [this link pretty much describes the email system I have in place](http://www.asianefficiency.com/email-management/simple-guide-to-managing-your-email/).
 
-Even though email is the best way to contact me, feel free to skype me (you can just click on the skype button to complete the call provided you have skype installed). The first time you skype me, you will need to request that I add you as a contact. Make sure you use the skype button and don’t just search under my name otherwise you may end up connecting to the account my son uses on his xbox — which would be a bit creepy.
-
-If you are more comfortable with Google Hangouts, I have a few profiles on Google+…make sure you use the one linked in the sidebar. You may also contact me by phone (207.780.4410) but the response time will likely be slower than my email response time.
+Aside from email, I have a Zoom virtual conference/office link in a Piazza pinned post. Zoom is the University of Maine System's web conferencing tool and we can do audio/video conferencing with screensharing and multiple participants.
 
 ## Project {-}
 
-If there is a project, this is the place
+The project is designed to encourage your ability to learn on your own. You must complete choose a DataCamp option from the list below. In an RPubs report that you post to Piazza, write up a review of the option you took (i.e., what you liked and didn't like about the courses) and attach the pdf certificates you were awarded. The following combinations are pre-approved. If there is another two courses you would prefer to take from the DataCamp catalog you must email me a brief rationale and ask for approval before starting them. Please check the prerequisite expectations listed in the course before you consider it. Any courses that are under the "absolutely can't use" list can't be used because you will be doing them in other business analytics courses or they are too similar to those courses.
+
+Pre-approved DataCamp combinations (not in any particular order):
+
+* [Introduction to Data](https://www.datacamp.com/courses/introduction-to-data) + [Exporatory Data Analysis](https://www.datacamp.com/courses/exploratory-data-analysis)
+* [Introduction to Data](https://www.datacamp.com/courses/introduction-to-data) + [Experimental Design in R](https://www.datacamp.com/courses/experimental-design-in-r)
+* [Introduction to SQL for Data Science](https://www.datacamp.com/courses/intro-to-sql-for-data-science) + [Joining Data in PostgreSQL](https://www.datacamp.com/courses/joining-data-in-postgresql)
+* [Correlation and Regression](https://www.datacamp.com/courses/correlation-and-regression) + [Marketing Analytics in R: Statistical Modeling](https://www.datacamp.com/courses/marketing-analytics-in-r-statistical-modeling)
+* [Correlation and Regression](https://www.datacamp.com/courses/correlation-and-regression) + [Multiple and Logistic Regression](https://www.datacamp.com/courses/multiple-and-logistic-regression)
+* [Working with the RStudio IDE (Part I)](https://www.datacamp.com/courses/working-with-the-rstudio-ide-part-1) + [Working with the RStudio IDE (Part II)](https://www.datacamp.com/courses/working-with-the-rstudio-ide-part-2)
+* [Intermediate R](https://www.datacamp.com/courses/intermediate-r) + [Time Series with R](https://www.datacamp.com/courses/introduction-to-time-series-analysis)
+* [Intermediate R](https://www.datacamp.com/courses/intermediate-r) + [Statistical Modeling with R (Part 1)](https://www.datacamp.com/courses/statistical-modeling-in-r-part-1)
+* [Intermediate R](https://www.datacamp.com/courses/intermediate-r) + [Network Analysis in R](https://www.datacamp.com/courses/network-analysis-in-r)
+* [Intermediate R](https://www.datacamp.com/courses/intermediate-r) + [Forecasting Product Demand in R](https://www.datacamp.com/courses/forecasting-product-demand-in-r)
+* Grab bag option - choose two from: [Business Process Analytics in R](https://www.datacamp.com/courses/business-process-analytics-in-r), [Writing Functions in R](https://www.datacamp.com/courses/writing-functions-in-r), [Correlation and Regression](https://www.datacamp.com/courses/correlation-and-regression), [Exploring Pitch Data with R](https://www.datacamp.com/courses/exploring-pitch-data-with-r)), [Importing & Cleaning Data in R: Case Studies](https://www.datacamp.com/courses/importing-cleaning-data-in-r-case-studies), [Intermediate R](https://www.datacamp.com/courses/intermediate-r), [Intermediate R - Practice](https://www.datacamp.com/courses/intermediate-r-practice), [Foundations of Probability in R](https://www.datacamp.com/courses/foundations-of-probability-in-r), [Fundamentals of Bayesian Data Analysis in R](https://www.datacamp.com/courses/fundamentals-of-bayesian-data-analysis-in-r), [A/B Testing in R](https://www.datacamp.com/courses/ab-testing-in-r)
+
+You absolutely **can't** use these courses:
+
+* Data Manipulation in R with dplyr
+* Introduction to R
+* Intermediate R
+* Importing Data in R (Parts 1-2)
+* Cleaning Data in R
+* Introduction to the Tidyverse
+* Reporting with R Markdown
+* Joining Data with dplyr
+* Data Visualizion with ggplot2 (I - II)
+* Building Web Applications in R with Shiny

@@ -1,0 +1,201 @@
+# Web scraping
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+unit_items <- schedule %>% filter(Unit == 12)
+start_date <- format(as.Date(unit_items$Start), format = "%A, %B %d %Y")
+end_date <- format(as.Date(unit_items$End), format = "%A, %B %d %Y")
+due_date <- format(as.Date(unit_items$Due.Date), format = "%A, %B %d %Y")
+due_items_long <- gsub(", ", "  \n* ", unit_items$Due.Long)
+span_message <- paste("<i>This unit spans <b>", start_date, " </b>through <b>", end_date, "</b>.</i>", sep="")
+due_message <- paste("At 11:59 PM on", due_date, "the following items are due:")
+head_message_items_due <- paste(span_message, "  \n<b>", due_message, "</b>  \n\n* ", due_items_long, sep="")
+head_message_no_items_due <- paste(span_message, "  \n<b>There are no items due this unit.</b>", sep="")
+head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no_items_due)
+```
+`r head_message`
+
+Assignment 3, has you working with Twitter data, which we covered in the last unit. The following section on web scraping is not needed to complete assignment 3. It merely rounds out your "working with web data" knowledge.
+
+## Media
+
+* Reading: [Web scraping, legal issues (US)](https://en.wikipedia.org/wiki/Web_scraping#United_States), Wikipedia
+* [rvest, easy web scraping with R](https://blog.rstudio.com/2014/11/24/rvest-easy-web-scraping-with-r/), Wickham
+* Video: [SelectorGadget](https://vimeo.com/52055686)
+* Video: [SelectorGadget on the USM site](https://youtu.be/Cgp2xEvy3Ts)
+* Video: [scraping with rvest](https://youtu.be/7IcSaXc8eDM)
+
+## Assignment 3
+
+Assignment 3 is exceptionally unstructured and feel free to get creative. The instructions are simple -- do something cool with Twitter data. There should be some visual elements to your report and please remember to use codechunk option echo = FALSE to mask (i.e., not show) your authentication keys for Twitter. To keep your creative juices flowing, I'm not going to break down this assignment with a point allocation. Remember to post your RPubs link in Piazza like you normally do.
+
+## Introduction
+
+If you find yourself trying to consistently pull information from websites for an analysis project, web-scraping can be invaluable. APIs like the one we used with Twitter are always preferred but not all sites have APIs designed to interact with their site. Please keep in mind the following caveats.
+
+* while the act of scraping is relatively harmless, reposting others intellectual property as your own can present some ethical and legal issues.
+* you should avoid placing too much of a load on the servers (e.g., continual scraping). Many sites will ban you for potentially degrading their site performance.
+* scraping programs are brittle. If a website design changes, it is highly likely that your scraping program will no longer work.
+
+We'll be scraping the USM athletics site for sporting event information. First, we'll load the libraries we'll be working with in this unit. If you don't already have the `XML` package installed, `rvest` will not function properly unless you install it. Note that every time I update these notes, I am rescraping the website so the video, the notes, and what you might experience will not have the same data.
+
+```{r load_lib, warning=FALSE, message=FALSE}
+library(rvest)
+library(stringr)
+library(reshape2)
+```
+
+Next we'll use the `read_html()` function from the `xml2` package that `rvest` depends on to take the entire html file into a list variable called `husky_events`
+
+```{r}
+husky_events <- read_html("http://usm.maine.edu/athletics/events")
+```
+
+Before we proceed, you need to install the chrome extension [SelectorGadget](https://chrome.google.com/webstore/detail/selectorgadget/mhjhnkcfbdhnjickkkdbjoemdmbfginb). If you don't have chrome, [install it first](https://www.google.com/chrome/). Finally, if you haven't already done so, watch the [SelectorGadget video](https://vimeo.com/52055686). The video is for the bookmarklet, but the extension functions in the same manner.
+
+After we use SelectorGadget on the [USM athletic events page](http://usm.maine.edu/athletics/events), we get the following mappings:
+
+* event name - `.description-container a`
+* month name (short) - `.month-display .date-display-single`
+* day of month - `.date-display`
+* time - `.time-location-container .date-display-single`
+
+SelectorGadget is returning the html/css tag specific information, also known as the CSS selector, for the information we want. If you look at the source, the shorthand for referencing the selector is:
+
+* class is referenced with a `.`
+* id is referenced with a `#`
+* tags without classes, or ids are referenced by name (i.e.,  no special character).
+
+We use `rvests` `html_nodes()` and `html_text()` functions to retrieve the data we want. We'll describe these functions in a little more detail later in this unit.
+
+```{r}
+event_sport_name <- husky_events %>% html_nodes(".description-container a") %>% html_text()
+month <- husky_events %>% html_nodes(".month-display .date-display-single") %>% html_text()
+day <- husky_events %>% html_nodes(".date-display") %>% html_text()
+time <- husky_events %>% html_nodes(".time-location-container .date-display-single") %>% html_text()
+```
+
+If we look at `event_sport_name` we can see that we'll need to do a little cleaning.
+
+```{r}
+head(event_sport_name)
+```
+
+Reference the last unit if you are not familiar with what we are doing here. `colsplit()` is a function from `reshape2` that splits strings into multiple columns in a data frame.
+
+```{r}
+event_sport_name <- event_sport_name %>% str_replace_all("\\(", "")
+events <- colsplit(event_sport_name, "\\) ", names = c("sport", "event"))
+head(events)
+```
+
+```{r}
+head(paste(time, month, day))
+```
+
+It might be helpful to combine our time, month, and day variables into a single `POSIXct` column.
+
+```{r}
+event_time <- as.POSIXct(paste(time, month, day, "2016"), format = "%H:%M %p %b %d %Y")
+head(event_time)
+```
+
+Now we have a data frame containing usable information. Depending on what we were going to do with the data, we could parse it further by breaking out the team that is coming to visit (this gets more difficult for tournaments), or whether the sport is Women's or Men's.
+
+```{r}
+events <- cbind(event_time, events)
+head(events)
+```
+
+We'll assume that this is our desired format and discuss what we just did in a little more detail.
+
+## Navigating html files
+
+Let's look at the relevant html from the USM events url. To keep it short, we have the first two events listed below. You'll notice that in some instances, there is a class name that maps to a specific piece of information. For example:
+
+* `month-display` always contains the short month name in an inner tag.
+* `date-display` and `day-display` also always map to the day of month and day of week.
+
+The `description-container` div contains two information items, both of which also apply to other elements in the web page.
+
+* the `<a>` anchor tag that contains the event name can apply to any linked item in the entire web page.
+* the `date-display-single` class containing the time can also map to the month, day of month, and day of week.
+
+In these cases, we need to be more specific about What we are attempting to map.
+
+* the `<a>` anchor tag that is nested inside `<h2>` tag nested in the `description-container` div contains the event name.
+* the `date-display-single` class nested inside of the `time-location-container` contains the time of the event.
+
+We are using what are known as the [CSS selectors](http://www.w3schools.com/cssref/css_selectors.asp) for navigating the html file. There is an alternative reference known as XPath that accomplishes the same thing but css selectors are a little easier to use. If you work with XML file, XPath is valuable to learn. SelectorGadget can also return the XPath.
+
+```
+          <div class="view-content">
+        <div class="item-group">
+	    <div class="item">
+        <div class="date-container">
+    <div class="date-container-inner">
+      <div class="month-display"><span class="date-display-single">Oct</span></div>
+      <div class="date-display"><span class="date-display-single">1</span></div>
+      <div class="day-display"><span class="date-display-single">Sat</span></div>
+    </div>
+  </div>
+	<div class="description-container">
+  	  		<h2><a href="/athletics/womens-cross-country-laval-university">(Women&#039;s Cross Country) Invitation Rouge et Or</a></h2>
+  	 	 	  		<div class="time-location-container">
+    		<span class="date-display-single">12:00 AM</span>  		</div>
+  	  		</div>
+
+    </div>
+      <div class="item">
+        <div class="date-container">
+    <div class="date-container-inner">
+      <div class="month-display"><span class="date-display-single">Oct</span></div>
+      <div class="date-display"><span class="date-display-single">1</span></div>
+      <div class="day-display"><span class="date-display-single">Sat</span></div>
+    </div>
+  </div>
+	<div class="description-container">
+  	  		<h2><a href="/athletics/field-hockey-western-conn-st-vs-southern-me">(Field Hockey) Western Conn. St. vs. Southern Me.</a></h2>
+  	 	 	  		<div class="time-location-container">
+    		<span class="date-display-single">12:00 PM</span>  		</div>
+  	  		</div>
+
+    </div>
+      <div class="item">
+        <div class="date-container">
+    <div class="date-container-inner">
+      <div class="month-display"><span class="date-display-single">Oct</span></div>
+      <div class="date-display"><span class="date-display-single">1</span></div>
+      <div class="day-display"><span class="date-display-single">Sat</span></div>
+    </div>
+  </div>
+	<div class="description-container">
+  	  		<h2><a href="/athletics/womens-tennis-southern-me-western-conn-st">(Women&#039;s Tennis) Southern Me. at Western Conn. St.</a></h2>
+  	 	 	  		<div class="time-location-container">
+    		<span class="date-display-single">12:00 PM</span>  		</div>
+  	  		</div>
+
+    </div>
+```
+The `html_nodes` function returns the entire node (i.e., tag and anything nested in the tag including text) for the css selector you are referencing. So if we want to reference the event, we can use `.description-container h2 a` as shown below.
+
+```{r}
+head(husky_events %>% html_nodes(".description-container h2 a"))
+```
+
+We can also use a shorter syntax of `.description-container a` which will search for the `<a>` tag nested inside the `description-container` even if it is nested inside of something else (in this case `<h2>`). SelectorGadget attempts to always return the shortest syntax.
+
+```{r}
+head(husky_events %>% html_nodes(".description-container a"))
+```
+
+The `html_text()` function simply extracts the text from a node.
+
+```{r}
+head(husky_events %>% html_nodes(".description-container a") %>% html_text())
+```
+
+The more dynamic and complex a site is, the more difficult it is to scrape consistently. This unit should have given you enough to get started with any web scraping tasks you might want to pursue in the future.

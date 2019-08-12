@@ -1,0 +1,167 @@
+# Importing Data
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library(knitr)
+library(dplyr)
+
+schedule <- read.csv("./data/example_schedule.csv", stringsAsFactors = FALSE)
+unit_items <- schedule %>% filter(Unit == 8)
+start_date <- format(as.Date(unit_items$Start), format = "%A, %B %d %Y")
+end_date <- format(as.Date(unit_items$End), format = "%A, %B %d %Y")
+due_date <- format(as.Date(unit_items$Due.Date), format = "%A, %B %d %Y")
+due_items_long <- gsub(", ", "  \n* ", unit_items$Due.Long)
+span_message <- paste("<i>This unit spans <b>", start_date, " </b>through <b>", end_date, "</b>.</i>", sep="")
+due_message <- paste("At 11:59 PM on", due_date, "the following items are due:")
+head_message_items_due <- paste(span_message, "  \n<b>", due_message, "</b>  \n\n* ", due_items_long, sep="")
+head_message_no_items_due <- paste(span_message, "  \n<b>There are no items due this unit.</b>", sep="")
+head_message <- ifelse(!is.na(due_date), head_message_items_due, head_message_no_items_due)
+```
+`r head_message`
+
+For the majority of this class, we'll be working with CSV files. Your DataCamp exercises introduce a few other file import methods that are always good to know. There are lots of different packages that deal with importing data. For text files, we will primarily be following the same process over and over with slightly different variants (i.e., this might get a little boring). We'll be using the `readr` and `readxl` packages in this unit.
+
+```{r}
+library(readr)
+library(readxl)
+```
+
+
+## Media
+
+* Podcast: [Spreadsheets in Data Science (with Jenny Bryan)](https://soundcloud.com/dataframed/26-spreadsheets-in-data-science-with-jenny-bryan), DataFramed(59:21)
+* Video: [Importing Data in RStudio](https://youtu.be/CftgU_Uk-wI)
+
+## Delimited text files
+
+Delimited text files are a standard way to transfer data from one system to another. They share a few common characteristics.
+
+* They are text files.
+* They may or may not have a "header" representing column names.
+* Each line typically represents a record.
+* They have delimiters.
+
+Delimiters are characters that are used to separate or _delimit_ each field in a line. Tabs and semicolons are common delimiters, but the most common is the comma. Comma-delimited text files are also called CSV files (comma-separated values).
+
+When reading in any files, you should know the answers to the following questions:
+
+* what is the file format? (e.g., delimited text, Excel)
+* does the first line represent a header?
+* do I want character data to be converted to factors on import? (usually, the answer is no)
+
+### read.csv and read_csv
+
+There isn't much to CSV files. Below is the first few lines of the [got.csv](http://jamessuleiman.com/teaching/datasets/got.csv) data we used in a prior unit.
+
+```
+lastname,firstname,major,year,gpa
+Snow,John,Nordic Studies,Junior,3.23
+Lannister,Tyrion,Communications,Sophomore,3.83
+Targaryen,Daenerys,Zoology,Freshman,3.36
+```
+
+We have already been using `read.csv`. It is part of the `utils` package that comes with R and is always loaded when you launch R (the other default packages are `base`, `graphics` and `stats`). We never specify any of these packages using `library` because they are always in our R session. So far, we have been using `read.csv` to read files that are stored on a website and wrapping the file names with `url()`. We can also copy text files to our working directory or a folder in our working directory. In this example, I downloaded the [got.csv](http://jamessuleiman.com/teaching/datasets/got.csv) file to a folder called `data` in my working directory. Notice I'm no longer using `url()` because I'm reading in the file from my hard drive.
+
+```{r}
+got <- read.csv("./data/got.csv", stringsAsFactors = FALSE)
+head(got)
+```
+
+I read in the file without converting the character data to factors. From the tidyverse package `readr`, I can also use read_csv to read in the CSV file as well. Not converting to factors is the default behavior.
+
+```{r, message=FALSE, warning=FALSE}
+got <- read_csv("./data/got.csv")
+head(got)
+```
+
+European delimited files sometimes use the semicolon `;` as a delimiter. In that case, we can use `read.csv2` or `read_csv2` in the same manner.
+
+### other delimiters
+
+Tabs are also common delimiters. Looking at the first few lines of [got_tab.txt](http://jamessuleiman.com/teaching/datasets/got_tab.txt)
+
+```
+lastname    firstname    major    year    gpa
+Snow    John    Nordic Studies    Junior    3.23
+Lannister    Tyrion    Communications    Sophomore    3.83
+Targaryen    Daenerys    Zoology    Freshman    3.36
+```
+
+We can use `utils::read.delim` or `readr::read_tsv` to read in a tab-delimited file in pretty much the same manner as `read.csv` and `read_csv`.
+
+```{r}
+got <- read.delim("./data/got_tab.txt", stringsAsFactors = FALSE)
+head(got)
+```
+
+```{r, message=FALSE, warning=FALSE}
+got <- read_tsv("./data/got_tab.txt")
+head(got)
+```
+
+For other delimiters, we would use `read.table` or `read_delim`. What is the delimiter in the following file?
+
+```
+lastname|firstname|major|year|gpa
+Snow|John|Nordic Studies|Junior|3.23
+Lannister|Tyrion|Communications|Sophomore|3.83
+Targaryen|Daenerys|Zoology|Freshman|3.36
+```
+
+The `|` is called a pipe and is being used as a delimiter in this case. The process is pretty straightforward for both versions using the file [got_pipe.txt](http://jamessuleiman.com/teaching/datasets/got_pipe.txt).
+
+```{r}
+got <- read.table("./data/got_pipe.txt", header = TRUE,
+                  sep = "|", stringsAsFactors = FALSE)
+head(got)
+```
+
+```{r, warning=FALSE, message=FALSE}
+got <- read_delim("./data/got_pipe.txt", delim = "|")
+head(got)
+```
+
+
+Older, mainframe data, sometimes comes in fixed-width files. For example, below is the first few lines of [got.prn](http://jamessuleiman.com/teaching/datasets/got.prn) which is a fixed-width file. _Note: fixed width files usually don't have headers so I'll need to create column names. If you are lucky, they come with a definition file that tells you the column widths. Often you won't have this file and will have to count spaces manually._
+
+```
+Snow      John      Nordic StudiesJunior          3.23
+Lannister Tyrion    CommunicationsSophomore       3.83
+Targaryen Daenerys  Zoology       Freshman        3.36
+```
+For this file, we can use `read.fwf` or `read_fwf`
+```{r}
+got <- read.fwf("./data/got.prn", widths = c(10,10,14,16,4), 
+                stringsAsFactors = FALSE)
+colnames(got) <- c("lastname", "firstname", "major", "year", "gpa")
+head(got)
+```
+
+```{r, message=FALSE, warning=FALSE}
+got <- read_fwf("./data/got.prn", fwf_widths(c(10,10,14,16,4),
+                col_names = c("lastname", "firstname", "major", "year", "gpa")))
+head(got)
+```
+
+Notice that in the `readr` version, the parameter syntax is slightly different and I can set column names inline in the `read_fwf` statement. I still often use the `utils` versions out of habit.
+
+## Excel data
+
+Generally speaking, Excel data can be a pain to work with in R. If you haven't already done so, please listen to the [podcast assigned for this unit](https://soundcloud.com/dataframed/26-spreadsheets-in-data-science-with-jenny-bryan) as it does a great job discussing spreadsheets in the analytics process.
+
+Reading Excel data in R, provided it is formatted similarly to the CSV files we worked with is relatively straightforward. I have an Excel workbook [got.xlsx](http://jamessuleiman.com/teaching/datasets/got.xlsx) that has two worksheets. "got," which represents the data we've been working with and "iron_throne," which contains the characters from the "got" data set that have sat on the Iron Throne. By default, `readxl`'s `read_excel` function will read in the first worksheet in a workbook.
+
+```{r}
+got <- read_excel("./data/got.xlsx")
+head(got)
+```
+
+If we want to read in the second worksheet, we could either specify `sheet = 2` or use the worksheet name as shown below.
+
+```{r}
+iron_throne <- read_excel("./data/got.xlsx", sheet = "iron_throne")
+head(iron_throne)
+```
+
+## DataCamp Exercises
+
+We aren't going to be working with too many messy Excel files in this course, but the DataCamp exercises go into some more specifics with the parameters in all of the read files functions. Skipping lines and identifying spreadsheet ranges to read is very helpful when you are dealing with larger, messy files.
